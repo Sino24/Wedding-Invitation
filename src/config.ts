@@ -21,6 +21,7 @@ export const C = {
   groomPhoto: "",
   bridePhoto: "",
   city: "Kerala, India",
+  theme: "wine" as "wine" | "navy" | "emerald", // colour theme: wine | navy | emerald
   tz: "Asia/Kolkata",
   message:
     "Along with our beloved families, we joyfully invite you to share in the blessing of our engagement and wedding, and to celebrate the beginning of our forever.",

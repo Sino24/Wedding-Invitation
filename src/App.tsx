@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { C, type EventItem } from "./config";
 import { useMusic } from "./useMusic";
 import "./styles.css";
@@ -33,20 +33,6 @@ function useCountdown(target: number) {
   ];
 }
 
-/* thin botanical line-art divider */
-function Sprig() {
-  const leaf = (x: number) => `M${x},12 C${x + 2},5 ${x + 9},2 ${x + 14},4 C${x + 12},10 ${x + 6},12 ${x},12Z`;
-  const xs = [22, 42, 62, 82];
-  return (
-    <svg className="sprig" viewBox="0 0 130 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="0.9" strokeLinecap="round">
-      <path d="M6 12H112" />
-      {xs.map((x) => <path key={"u" + x} d={leaf(x)} />)}
-      <g transform="translate(0,24) scale(1,-1)">{xs.map((x) => <path key={"d" + x} d={leaf(x + 8)} />)}</g>
-      <path d="M112 12 C116 6 122 6 126 9 C122 15 116 15 112 12Z" />
-    </svg>
-  );
-}
-
 function Portrait(p: { role: string; name: string; photo: string; parents: string }) {
   return (
     <figure className="fig rv">
@@ -69,7 +55,9 @@ function Day({ e }: { e: EventItem }) {
       <p className="venue"><b>{e.venue}</b><br />{e.address}</p>
       <p className="note">{e.note}</p>
       <ul className="sch">
-        {e.schedule.map(([t, w]) => (<li key={t + w}><b>{t}</b><span>{w}</span></li>))}
+        {e.schedule.map(([t, w], i) => (
+          <li key={t + w} style={{ "--i": i } as CSSProperties}><b>{t}</b><span>{w}</span></li>
+        ))}
       </ul>
       <div className="acts">
         <a className="btn fill" href={e.map} target="_blank" rel="noopener noreferrer">View location</a>
@@ -85,6 +73,7 @@ export default function App() {
   const count = useCountdown(new Date(wed.start).getTime());
   const names = `${C.groom} & ${C.bride}`;
 
+  useEffect(() => { document.documentElement.dataset.theme = C.theme; }, []);
   useEffect(() => { document.title = `${names} — Wedding Invitation`; }, [names]);
   useEffect(() => { document.body.classList.toggle("locked", !opened); }, [opened]);
   useEffect(() => {
@@ -95,8 +84,13 @@ export default function App() {
         (es) => es.forEach((x) => { if (x.isIntersecting) { x.target.classList.add("in"); io?.unobserve(x.target); } }),
         { threshold: 0.15 }
       );
-      document.querySelectorAll<HTMLElement>(".rv").forEach((el) => io!.observe(el));
-    }, 400);
+      document.querySelectorAll("section").forEach((sec) =>
+        sec.querySelectorAll<HTMLElement>(".rv,.draw").forEach((el, i) => {
+          el.style.transitionDelay = Math.min(i, 4) * 0.13 + "s";
+          io!.observe(el);
+        })
+      );
+    }, 600);
     return () => { clearTimeout(t); io?.disconnect(); };
   }, [opened]);
 
@@ -109,25 +103,39 @@ export default function App() {
       )}
 
       <div className={"cover" + (opened ? " open" : "")} role="dialog" aria-label="Wedding invitation cover">
+        <div className="door l" />
+        <div className="door r" />
         <div className="cover-in">
-          <div className="kick">We’re getting married</div>
-          <h1><span>{C.groom}</span><i>and</i><span>{C.bride}</span></h1>
-          <Sprig />
-          <p className="cdate">{dl(wed.start, { day: "numeric", month: "long", year: "numeric" })} &nbsp;·&nbsp; {C.city}</p>
-          <button className="btn fill" onClick={open}>Open invitation</button>
+          <div className="kick">The wedding of</div>
+          <div className="cnames shimmer" role="heading" aria-level={1}>
+            <span>{C.groom}</span><i>&amp;</i><span>{C.bride}</span>
+          </div>
+          <button className="seal" onClick={open} aria-label="Open invitation">
+            <span>{C.groom[0]}&amp;{C.bride[0]}</span>
+          </button>
+          <div className="tap">Tap to open</div>
+          <div className="cdate">{dl(wed.start, { day: "numeric", month: "long", year: "numeric" })} &nbsp;·&nbsp; {C.city}</div>
         </div>
       </div>
 
       <main>
-        <section className="intro">
-          <div className="kick rv">Together with their families</div>
-          <h2 className="rv">You are warmly invited</h2>
+        <section className={"hero" + (opened ? " go" : "")}>
+          <div className="kick fu k1">Together with their families</div>
+          <h1 className="hn">
+            <span className="wipe w1">{C.groom}</span>
+            <i className="amp fu k2">&amp;</i>
+            <span className="wipe w2">{C.bride}</span>
+          </h1>
+          <div className="hline fu k3" />
+          <p className="hdate fu k3">{dl(wed.start, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</p>
+          <div className="cue fu k4"><span>Scroll</span><em /></div>
+        </section>
+
+        <section className="invite">
+          <div className="kick rv">With joy in our hearts</div>
+          <h2 className="rv">You are invited</h2>
+          <div className="draw" />
           <p className="lead rv">{C.message}</p>
-          <div className="dateblock rv">
-            <span>{dl(wed.start, { weekday: "long" })}</span>
-            <b>{dl(wed.start, { day: "numeric" })}</b>
-            <span>{dl(wed.start, { month: "long", year: "numeric" })}</span>
-          </div>
           <div className="count rv">
             {count.map(([l, v]) => (<div key={l}><b>{v}</b><span>{l}</span></div>))}
           </div>
@@ -135,7 +143,7 @@ export default function App() {
 
         <section className="duo tint">
           <div className="kick rv">The couple</div>
-          <h2 className="rv">{C.groom} <i>&amp;</i> {C.bride}</h2>
+          <h2 className="rv">Two hearts, one story</h2>
           <div className="pair">
             <Portrait role="The Groom" name={C.groom} photo={C.groomPhoto} parents={C.groomParents} />
             <Portrait role="The Bride" name={C.bride} photo={C.bridePhoto} parents={C.brideParents} />
@@ -148,14 +156,15 @@ export default function App() {
           {C.events.map((e) => <Day key={e.key} e={e} />)}
         </section>
 
-        <section className="rsvp tint">
-          <Sprig />
+        <section className="rsvp">
+          <div className="kick rv">Kindly reply</div>
           <h2 className="rv">Will you join us?</h2>
           <p className="rv">Your presence will make our day complete.</p>
           <a className="btn fill rv" target="_blank" rel="noopener noreferrer"
              href={`https://wa.me/${C.rsvpPhone}?text=${encodeURIComponent(C.rsvpText)}`}>RSVP on WhatsApp</a>
-          <div className="sign rv">{names}</div>
-          <small>With love, and with blessings from both our families</small>
+          <div className="draw" />
+          <div className="sign shimmer rv">{names}</div>
+          <small className="rv">With love, and with blessings from both our families</small>
         </section>
       </main>
     </>
